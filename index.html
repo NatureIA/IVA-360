@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>IVA360 — Auditoria Fiscal (Demo GitHub Pages)</title>
+  <link rel="stylesheet" href="./css/styles.css">
+</head>
+<body>
+  <div class="container">
+    <h1>IVA360 — Auditoria Fiscal</h1>
+    <div class="sub">Upload de XML (NF‑e/CT‑e) • Auditoria client‑side • Base histórica simplificada</div>
+
+    <div class="card upload">
+      <label id="label-file" class="btn" for="file">Selecionar XML(s)</label>
+      <input id="file" type="file" accept=".xml" multiple>
+      <button id="btn-audit" class="btn">Auditar</button>
+      <small>Os arquivos não saem do seu navegador.</small>
+    </div>
+
+    <div class="grid">
+      <div class="kpi"><h3>Notas importadas</h3><div id="kpi-total" class="v">0</div></div>
+      <div class="kpi"><h3>Notas corretas</h3><div id="kpi-ok" class="v">0</div></div>
+      <div class="kpi"><h3>Com risco</h3><div id="kpi-risk" class="v">0</div></div>
+      <div class="kpi"><h3>Valor em risco</h3><div id="kpi-value" class="v">R$ 0,00</div></div>
+    </div>
+
+    <div class="card" style="margin-top:16px">
+      <table>
+        <thead>
+          <tr>
+            <th>Nº Doc</th><th>Tipo</th><th>Data</th><th>UF</th><th>Valor</th>
+            <th>Problema</th><th>Declarado</th><th>Correto</th><th>Como corrigir</th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+
+    <div class="footer">
+      <small>Base <code>data/aliquotas.json</code> é demonstrativa. Substitua por dados oficiais quando forem integrados.</small>
+    </div>
+  </div>
+
+  <script type="module" src="./js/app.js"></script>
+</body>
+</html>
