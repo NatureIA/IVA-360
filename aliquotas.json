@@ -1,0 +1,107 @@
+{
+  "meta": {
+    "descricao": "Aliquotas historicas simplificadas para demo. Substitua por dados oficiais.",
+    "last_updated": "2025-10-06"
+  },
+  "PIS": [
+    {
+      "percentual": 1.65,
+      "vigencia_inicio": "2010-01-01",
+      "vigencia_fim": "2025-12-31",
+      "fonte_legal": "Lei 10.637/2002"
+    }
+  ],
+  "COFINS": [
+    {
+      "percentual": 7.6,
+      "vigencia_inicio": "2010-01-01",
+      "vigencia_fim": "2025-12-31",
+      "fonte_legal": "Lei 10.833/2003"
+    }
+  ],
+  "CBS": [
+    {
+      "percentual": 0.9,
+      "vigencia_inicio": "2026-01-01",
+      "vigencia_fim": "2027-06-30",
+      "fonte_legal": "LC Reforma (placeholder)"
+    },
+    {
+      "percentual": 1.4,
+      "vigencia_inicio": "2027-07-01",
+      "vigencia_fim": "2027-12-31",
+      "fonte_legal": "LC Reforma (placeholder)"
+    },
+    {
+      "percentual": 2.0,
+      "vigencia_inicio": "2028-01-01",
+      "vigencia_fim": null,
+      "fonte_legal": "LC Reforma (placeholder)"
+    }
+  ],
+  "ICMS": {
+    "SP": [
+      {
+        "percentual": 18.0,
+        "vigencia_inicio": "2000-01-01",
+        "vigencia_fim": null,
+        "fonte_legal": "Lei 6.374/1989 (SP)"
+      }
+    ],
+    "RJ": [
+      {
+        "percentual": 19.0,
+        "vigencia_inicio": "2016-01-01",
+        "vigencia_fim": null,
+        "fonte_legal": "Lei 2.657/1996 (RJ)"
+      }
+    ]
+  },
+  "IBS": [
+    {
+      "percentual": 0.1,
+      "vigencia_inicio": "2026-01-01",
+      "vigencia_fim": "2026-12-31",
+      "fonte_legal": "LC Reforma (placeholder)"
+    },
+    {
+      "percentual": 0.5,
+      "vigencia_inicio": "2027-01-01",
+      "vigencia_fim": "2027-12-31",
+      "fonte_legal": "LC Reforma (placeholder)"
+    },
+    {
+      "percentual": 1.0,
+      "vigencia_inicio": "2028-01-01",
+      "vigencia_fim": null,
+      "fonte_legal": "LC Reforma (placeholder)"
+    }
+  ],
+  "ISS": {
+    "3550308": [
+      {
+        "percentual": 5.0,
+        "vigencia_inicio": "2003-01-01",
+        "vigencia_fim": null,
+        "fonte_legal": "Lei Municipal 13.701/2003"
+      }
+    ],
+    "3304557": [
+      {
+        "percentual": 5.0,
+        "vigencia_inicio": "1984-12-29",
+        "vigencia_fim": null,
+        "fonte_legal": "Lei Municipal 691/1984"
+      }
+    ]
+  },
+  "IS": [
+    {
+      "ncm_prefix": "2203",
+      "percentual": 10.0,
+      "vigencia_inicio": "2026-01-01",
+      "vigencia_fim": null,
+      "fonte_legal": "LC Reforma (placeholder)"
+    }
+  ]
+}
