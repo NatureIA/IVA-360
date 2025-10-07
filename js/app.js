@@ -45,13 +45,18 @@ async function handleUpload(files){
   $('#btn-audit').disabled = false;
 }
 
-document.addEventListener('DOMContentLoaded', ()=>{
-  const input = $('#file');
-  $('#label-file').addEventListener('click', ()=> input.click());
-  input.addEventListener('change', e => {
-    if(e.target.files.length){
-      handleUpload([...e.target.files]);
+document.addEventListener('DOMContentLoaded', () => {
+  const fileInput = document.getElementById('file-input');
+  fileInput.addEventListener('change', (event) => {
+    const files = event.target.files;
+    for (const file of files) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const xmlContent = e.target.result;
+        parseXML(xmlContent, file.name);  // chama o parser já existente
+      };
+      reader.readAsText(file);
     }
   });
-  $('#btn-audit').addEventListener('click', ()=> input.click());
 });
+
