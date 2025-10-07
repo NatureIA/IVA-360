@@ -1,9 +1,29 @@
-// Simple XML NF-e/CT-e auditor (client-side).
-// Demo funcional: parseia XMLs, extrai campos e compara impostos.
+// Auditor NF-e / CT-e client-side (robusto p/ namespace + fallback de dados)
 
 async function loadAliquotas(){
-  const resp = await fetch('./data/aliquotas.json');
-  return resp.json();
+  // 1) tenta inline <script id="aliquotas-json" type="application/json">
+  const inline = document.getElementById('aliquotas-json');
+  if (inline) {
+    try { return JSON.parse(inline.textContent); }
+    catch(e){ console.warn('[IVA360] aliquotas inline inválidas:', e); }
+  }
+
+  // 2) tenta arquivo externo (projeto GitHub Pages)
+  const candidates = [
+    './data/aliquotas.json',
+    `${location.pathname.replace(/\/[^/]*$/, '')}/data/aliquotas.json`,
+    '/data/aliquotas.json'
+  ];
+  for (const url of candidates){
+    try {
+      const resp = await fetch(url, { cache:'no-store' });
+      if (resp.ok) return await resp.json();
+      console.warn('[IVA360] fetch falhou', url, resp.status);
+    } catch(e){
+      console.warn('[IVA360] erro fetch', url, e);
+    }
+  }
+  throw new Error('aliquotas.json não encontrado');
 }
 
 function parseXMLText(txt){
@@ -11,40 +31,50 @@ function parseXMLText(txt){
   return p.parseFromString(txt, 'application/xml');
 }
 
-// Busca robusta, ignora namespace
-function getTextNS(x, tag){
-  const el = x.getElementsByTagNameNS("*", tag)[0];
+// Ignora namespace (usa localName / getElementsByTagNameNS)
+function getTextNS(root, tag){
+  const el = root.getElementsByTagNameNS('*', tag)[0];
   return el ? el.textContent.trim() : null;
 }
 
-function parseNFe(x){
-  const tipo = 'NF-e';
-  const numero = getTextNS(x, 'nNF');
-  const data   = (getTextNS(x, 'dhEmi') || getTextNS(x, 'dEmi') || '').slice(0,10);
-  const uf     = getTextNS(x, 'UF');
-  const vProd  = parseFloat(getTextNS(x, 'vProd') || '0');
-  const vNF    = parseFloat(getTextNS(x, 'vNF')   || '0');
+function parseNFe(doc){
+  const root = doc; // buscar no documento inteiro
+  const tipo   = 'NF-e';
+  const numero = getTextNS(root, 'nNF');
+  const data   = (getTextNS(root, 'dhEmi') || getTextNS(root, 'dEmi') || '').slice(0,10);
+  const uf     = getTextNS(root, 'UF');
+  const vProd  = parseFloat(getTextNS(root, 'vProd') || '0');
+  const vNF    = parseFloat(getTextNS(root, 'vNF')   || '0');
 
-  // PIS/COFINS
-  const vPIS = parseFloat(getTextNS(x, 'vPIS')    || '0');
-  const vCOF = parseFloat(getTextNS(x, 'vCOFINS') || '0');
+  // Totais/declarados (usamos nós de total se existirem)
+  const vPIS = parseFloat(getTextNS(root, 'vPIS')    || '0');
+  const vCOF = parseFloat(getTextNS(root, 'vCOFINS') || '0');
 
   return { tipo, numero, data, uf, vProd, vNF, declared: { vPIS, vCOF } };
 }
 
-function parseCTe(x){
-  const tipo = 'CT-e';
-  const numero = getTextNS(x, 'nCT');
-  const data   = (getTextNS(x, 'dhEmi') || '').slice(0,10);
-  const uf     = getTextNS(x, 'UF');
-  const vPrest = parseFloat(getTextNS(x, 'vTPrest') || '0');
+function parseCTe(doc){
+  const root   = doc;
+  const tipo   = 'CT-e';
+  const numero = getTextNS(root, 'nCT');
+  const data   = (getTextNS(root, 'dhEmi') || '').slice(0,10);
+  const uf     = getTextNS(root, 'UF');
+  const vPrest = parseFloat(getTextNS(root, 'vTPrest') || '0');
   return { tipo, numero, data, uf, vProd:vPrest, vNF:vPrest, declared:{} };
 }
 
+function validDate(iso){
+  if (!iso) return false;
+  const d = new Date(iso);
+  return !isNaN(d.getTime());
+}
+
 function within(date, a, b){
-  if(!date) return false;
+  if(!validDate(date)) return false;
   const d = new Date(date);
-  return d >= new Date(a) && (b === null || d <= new Date(b));
+  const start = new Date(a);
+  const end   = b ? new Date(b) : new Date('9999-12-31');
+  return d >= start && d <= end;
 }
 
 function pickRate(rates, date){
@@ -64,35 +94,33 @@ export async function auditFiles(files){
     const txt = await f.text();
     const xml = parseXMLText(txt);
 
-    // Detecta NF-e vs CT-e pela raiz
-    const rootName = xml.documentElement.nodeName.toLowerCase();
+    const rootLocal = (xml.documentElement && xml.documentElement.localName || '').toLowerCase();
     let parsed;
-    if(rootName.includes('cte')) parsed = parseCTe(xml);
-    else parsed = parseNFe(xml);
+    if (rootLocal.includes('cte')) parsed = parseCTe(xml);
+    else                           parsed = parseNFe(xml);
 
     const date = parsed.data || '—';
     const uf   = parsed.uf   || '—';
     const base = parsed.vProd || parsed.vNF || 0;
 
     // Alíquotas esperadas
-    const pisRate = pickRate(aliq.PIS, date);
-    const cofRate = pickRate(aliq.COFINS, date);
-    const cbsRate = pickRate(aliq.CBS, date);
-    const icmsRate= (aliq.ICMS[uf] ? pickRate(aliq.ICMS[uf], date) : null);
-    const ibsRate = pickRate(aliq.IBS, date);
+    const pisRate  = pickRate(aliq.PIS, date);
+    const cofRate  = pickRate(aliq.COFINS, date);
+    const cbsRate  = pickRate(aliq.CBS, date);
+    const icmsRate = (aliq.ICMS && aliq.ICMS[uf]) ? pickRate(aliq.ICMS[uf], date) : null;
+    const ibsRate  = pickRate(aliq.IBS, date);
 
     // Declarados
     const vPISd = parsed.declared.vPIS || 0;
     const vCOFd = parsed.declared.vCOF || 0;
 
     // Esperados
-    const vPISexp = pisRate ? base * (pisRate/100) : 0;
-    const vCOFexp = cofRate ? base * (cofRate/100) : 0;
-    const vCBSexp = cbsRate ? base * (cbsRate/100) : 0;
-    const vICMSexp= icmsRate? base * (icmsRate/100): 0;
-    const vIBSexp = ibsRate ? base * (ibsRate/100) : 0;
+    const vPISexp  = pisRate  ? base * (pisRate/100)  : 0;
+    const vCOFexp  = cofRate  ? base * (cofRate/100)  : 0;
+    const vCBSexp  = cbsRate  ? base * (cbsRate/100)  : 0;
+    const vICMSexp = icmsRate ? base * (icmsRate/100) : 0;
+    const vIBSexp  = ibsRate  ? base * (ibsRate/100)  : 0;
 
-    // Regras de divergência
     let issue=null, declared='—', correct='—', howto='—', exposure=0;
 
     if(vPISd>0 && pisRate!==null){
@@ -121,25 +149,18 @@ export async function auditFiles(files){
       issue   = 'Revisar transição CBS/IBS';
       declared= '—';
       correct = `CBS~${(vCBSexp||0).toFixed(2)} | IBS~${(vIBSexp||0).toFixed(2)}`;
-      howto   = `Verificar regras de transição na data ${date}`;
+      howto   = `Verificar regras na data ${date}`;
     }
 
-    const row = {
-      docNumber: parsed.numero,
-      type: parsed.tipo,
-      date, uf,
+    details.push({
+      docNumber: parsed.numero, type: parsed.tipo, date, uf,
       total: base,
       issue: issue ? `<span class="badge warn">${issue}</span>` : `<span class="badge ok">OK</span>`,
       declared, correct, howto
-    };
+    });
 
-    total++;
-    if(issue){ risk++; atRiskValue+=exposure; } else { ok++; }
-    details.push(row);
+    total++; if(issue){ risk++; atRiskValue+=exposure; } else { ok++; }
   }
 
-  return {
-    summary: { total, ok, risk, atRiskValue: Math.round(atRiskValue*100)/100 },
-    details
-  };
+  return { summary: { total, ok, risk, atRiskValue: Math.round(atRiskValue*100)/100 }, details };
 }
