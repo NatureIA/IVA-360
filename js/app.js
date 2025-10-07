@@ -1,11 +1,11 @@
 import { auditFiles } from './audit.js';
 
-const $  = s => document.querySelector(s);
+const $ = s => document.querySelector(s);
 
 const state = { results: [], summary: { total:0, ok:0, risk:0, atRiskValue:0 } };
 
-function formatBRL(n){ 
-  try { return n.toLocaleString('pt-BR',{style:'currency',currency:'BRL'}) }
+function formatBRL(n){
+  try { return Number(n||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'}) }
   catch { return 'R$ ' + (Number(n||0)).toFixed(2) }
 }
 
@@ -44,41 +44,34 @@ async function handleUpload(fileList){
   if (btn) btn.disabled = true;
 
   try {
+    console.log('[IVA360] Arquivos recebidos:', files.map(f=>f.name));
     const { summary, details } = await auditFiles(files);
+    console.log('[IVA360] Resultado auditoria:', summary, details);
     state.summary = summary || { total:0, ok:0, risk:0, atRiskValue:0 };
     state.results = details || [];
     renderSummary();
     renderTable();
   } catch (err){
-    console.error('Erro na auditoria:', err);
-    alert('Falha ao processar os XMLs. Veja o Console (F12).');
+    console.error('[IVA360] Erro na auditoria:', err);
+    alert('Falha ao processar os XMLs (veja o Console com F12).');
   } finally {
     if (btn) btn.disabled = false;
   }
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-  const input  = document.getElementById('file');
+  const input  = document.getElementById('file');       // bate com seu index.html
   const btn    = document.getElementById('btn-audit');
   const label  = document.getElementById('label-file');
 
-  // abre seletor pelo botão/label
   if (btn)   btn.addEventListener('click', () => input && input.click());
   if (label) label.addEventListener('click', () => input && input.click());
+  if (input) input.addEventListener('change', e => handleUpload(e.target.files));
 
-  // processa quando selecionar arquivo(s)
-  if (input){
-    input.addEventListener('change', (e) => handleUpload(e.target.files));
-  } else {
-    console.error('Input #file não encontrado no HTML.');
-  }
-
-  // (opcional) suporte a arrastar/soltar
-  document.addEventListener('dragover', e => { e.preventDefault(); });
+  // drag & drop opcional
+  document.addEventListener('dragover', e => e.preventDefault());
   document.addEventListener('drop', e => {
     e.preventDefault();
-    if (e.dataTransfer && e.dataTransfer.files?.length){
-      handleUpload(e.dataTransfer.files);
-    }
+    if (e.dataTransfer?.files?.length) handleUpload(e.dataTransfer.files);
   });
 });
